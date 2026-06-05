@@ -1,0 +1,7 @@
+# backend
+todo-backend/node_modules
+todo-backend/.env
+
+# frontend
+todo-frontend/node_modules
+todo-frontend/.env
