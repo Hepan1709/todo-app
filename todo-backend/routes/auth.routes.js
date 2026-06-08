@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
-const User = require("../models/user.js");
+const User = require("../models/user.model");
 
 // helper — creates a JWT token for a user
 function generateToken(userId) {
@@ -42,18 +42,11 @@ router.post("/register", async (req, res) => {
         // 4. generate token
         const token = generateToken(user._id);
 
-        // 5. set token as HttpOnly cookie
-        res.cookie("token", token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-          sameSite: "lax",
-        });
-
-        // 6. send back user info (token is in cookie, not response body)
+        // 5. send back token + user info (never send password)
         res.status(201).json({
             success: true,
             message: "Account created successfully",
+            token,
             user: {
               _id: user._id,
               name: user.name,
@@ -83,6 +76,7 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({ email });
 
     // 3. check user exists AND password matches
+    // we use the same message for both — don't reveal which one is wrong
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({
         success: false,
@@ -93,18 +87,11 @@ router.post("/login", async (req, res) => {
     // 4. generate token
     const token = generateToken(user._id);
 
-    // 5. set token as HttpOnly cookie
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: "lax",
-    });
-
-    // 6. send user info
+    // 5. send token + user info
     res.status(200).json({
       success: true,
       message: "Logged in successfully",
+      token,
       user: {
         _id: user._id,
         name: user.name,
@@ -114,20 +101,6 @@ router.post("/login", async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-});
-
-// ─── LOGOUT ────────────────────────────────────────────────────
-// POST /api/auth/logout
-router.post("/logout", (req, res) => {
-  res.cookie("token", "", {
-    httpOnly: true,
-    maxAge: 0,
-    sameSite: "lax",
-  });
-  res.status(200).json({
-    success: true,
-    message: "Logged out successfully",
-  });
 });
 
 // ─── GET CURRENT USER ────────────────────────────────────────
