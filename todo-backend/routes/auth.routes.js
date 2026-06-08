@@ -4,17 +4,15 @@ const router = express.Router();
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.js");
 
-// helper — creates a JWT token for a user
+
 function generateToken(userId) {
     return jwt.sign(
-      { id: userId },            // payload — what we store inside the token
-      process.env.JWT_SECRET,    // secret key — used to sign + verify
-      { expiresIn: process.env.JWT_EXPIRE || "7d" } // token expires in 7 days
+      { id: userId },            
+      process.env.JWT_SECRET,    
+      { expiresIn: process.env.JWT_EXPIRE || "7d" } 
     );
 }
 
-// ─── REGISTER ────────────────────────────────────────────────
-// POST /api/auth/register
 router.post("/register", async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -58,8 +56,7 @@ router.post("/register", async (req, res) => {
     }
 });
 
-// ─── LOGIN ────────────────────────────────────────────────────
-// POST /api/auth/login
+
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -103,8 +100,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// ─── GET CURRENT USER ────────────────────────────────────────
-// GET /api/auth/me  (protected)
+
 const protect = require("../middleware/auth");
 
 router.get("/me", protect, async (req, res) => {

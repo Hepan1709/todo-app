@@ -35,10 +35,10 @@ const protect = async (req, res, next) => {
       req.user = user;
       // now in any protected route: req.user._id, req.user.name, req.user.email
 
-      next(); // all checks passed → continue to route handler
+      next(); 
 
   } catch (error) {
-      // jwt.verify throws if token is invalid or expired
+      
       return res.status(401).json({
         success: false,
         message: "Invalid or expired token. Please login again.",

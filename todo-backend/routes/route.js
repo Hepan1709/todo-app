@@ -87,9 +87,9 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const todo = await Todo.findOneAndUpdate(
-      { _id: req.params.id, user: req.user._id }, // filter
-      req.body,                                    // what to update
-      { new: true, runValidators: true }           // options
+      { _id: req.params.id, user: req.user._id }, 
+      req.body,                                    
+      { new: true, runValidators: true }           
     );
 
     if (!todo) {
@@ -114,7 +114,7 @@ router.delete("/:id", async (req, res) => {
   try {
     const todo = await Todo.findOneAndDelete({
       _id: req.params.id,
-      user: req.user._id, // can only delete YOUR own todos
+      user: req.user._id, 
     });
 
     if (!todo) {
