@@ -1,11 +1,32 @@
 const express = require("express");
 const router = express.Router();
 const Todo = require("../models/model.js");
+const protect = require("../middleware/auth.js");
 
+router.use(protect);
 
 router.get("/", async (req, res) => {
   try {
-    const todos = await Todo.find(); 
+    const {done , search , sortBy } = req.query;
+
+    const filter = { user: req.user._id };
+
+    if (search) {
+      filter.text = { $regex: search, $options: "i" };
+    }
+    if (done === "true") {
+      filter.done = done === true;
+    }
+
+    let sortOption = { createdAt: -1 };
+    if (sortBy === "dueDate"){
+      sortOption = { dueDate: 1 };
+    }
+    if (sortBy === "oldest"){
+      sortOption = { createdAt: 1 };
+    }
+
+    const todos = await Todo.find(filter).sort(sortOption);
     res.status(200).json({
       success: true,
       count: todos.length,
@@ -19,7 +40,10 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const todo = await Todo.findById(req.params.id);
+    const todo = await Todo.findOne({
+      _id: req.params.id,
+      user: req.user._id,
+    });
 
     if (!todo) {
       return res.status(404).json({
@@ -37,7 +61,7 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text , dueDate } = req.body;
 
     
     if (!text || text.trim() === "") {
@@ -47,7 +71,7 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const newTodo = await Todo.create({ text }); 
+    const newTodo = await Todo.create({ text , dueDate: dueDate || null , user: req.user._id }); 
 
     res.status(201).json({
       success: true,
@@ -62,13 +86,10 @@ router.post("/", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
-    const todo = await Todo.findByIdAndUpdate(
-      req.params.id, 
-      req.body,      
-      {
-        new: true,          
-        runValidators: true, 
-      }
+    const todo = await Todo.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id }, // filter
+      req.body,                                    // what to update
+      { new: true, runValidators: true }           // options
     );
 
     if (!todo) {
@@ -91,7 +112,10 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const todo = await Todo.findByIdAndDelete(req.params.id);
+    const todo = await Todo.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user._id, // can only delete YOUR own todos
+    });
 
     if (!todo) {
       return res.status(404).json({
