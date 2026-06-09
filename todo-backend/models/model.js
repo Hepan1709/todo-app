@@ -11,6 +11,11 @@ const todoSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    status: {
+      type: String,
+      enum: ["pending", "in-progress", "complete"],
+      default: "pending",
+    },
     dueDate: {
       type: Date,
       default: null,

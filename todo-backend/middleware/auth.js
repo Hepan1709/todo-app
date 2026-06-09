@@ -4,25 +4,34 @@ const User = require("../models/user.js");
 
 const protect = async (req, res, next) => {
   try {
-      // 1. check if token exists in headers
+      // Debug logs — temporary
+      console.debug('DEBUG auth: cookies=', req.cookies);
+
       const authHeader = req.headers.authorization;
 
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.debug('DEBUG auth: authHeader=', authHeader);
+
+      // check for token in cookie first, otherwise support Authorization header
+      const token = req.cookies?.token || (authHeader && authHeader.startsWith("Bearer ")
+        ? authHeader.split(" ")[1]
+        : null);
+
+
+      if (!token) {
+        console.debug('DEBUG auth: no token found');
         return res.status(401).json({
           success: false,
           message: "Not authorized. Please login first.",
         });
       }
 
-      // 2. extract token — "Bearer eyJhbG..." → "eyJhbG..."
-      const token = authHeader.split(" ")[1];
-
-      // 3. verify the token using our secret key
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       // if token is fake or expired, this throws an error → caught below
 
-      // 4. find the user from the id stored inside the token
+      // find the user from the id stored inside the token
       const user = await User.findById(decoded.id);
+
+      console.debug('DEBUG auth: decoded id=', decoded.id);
 
       if (!user) {
         return res.status(401).json({
@@ -31,7 +40,7 @@ const protect = async (req, res, next) => {
         });
       }
 
-      // 5. attach user to req so route handlers can use it
+      // attach user to req so route handlers can use it
       req.user = user;
       // now in any protected route: req.user._id, req.user.name, req.user.email
 

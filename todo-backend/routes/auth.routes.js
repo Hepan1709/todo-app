@@ -13,11 +13,21 @@ function generateToken(userId) {
     );
 }
 
+function setAuthCookie(res, token) {
+    const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "none",
+      path: "/",
+      maxAge,
+      secure: true, // required for SameSite=None in modern browsers, localhost is treated as secure
+    });
+}
+
 router.post("/register", async (req, res) => {
     try {
         const { name, email, password } = req.body;
 
-        // 1. validate fields
         if (!name || !email || !password) {
             return res.status(400).json({
               success: false,
@@ -25,7 +35,6 @@ router.post("/register", async (req, res) => {
             });
         }
 
-        // 2. check if email already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(409).json({
@@ -34,17 +43,17 @@ router.post("/register", async (req, res) => {
             });
         }
 
-        // 3. create user — password is hashed automatically by pre-save hook
+        // create user — password is hashed automatically by pre-save hook
         const user = await User.create({ name, email, password });
 
-        // 4. generate token
+     
         const token = generateToken(user._id);
+        setAuthCookie(res, token);
 
-        // 5. send back token + user info (never send password)
+
         res.status(201).json({
             success: true,
             message: "Account created successfully",
-            token,
             user: {
               _id: user._id,
               name: user.name,
@@ -61,7 +70,7 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1. validate fields
+    
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -69,11 +78,10 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // 2. find user by email
+    
     const user = await User.findOne({ email });
 
-    // 3. check user exists AND password matches
-    // we use the same message for both — don't reveal which one is wrong
+ 
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({
         success: false,
@@ -81,14 +89,14 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // 4. generate token
-    const token = generateToken(user._id);
 
-    // 5. send token + user info
+    const token = generateToken(user._id);
+    setAuthCookie(res, token);
+
+
     res.status(200).json({
       success: true,
       message: "Logged in successfully",
-      token,
       user: {
         _id: user._id,
         name: user.name,
@@ -113,6 +121,11 @@ router.get("/me", protect, async (req, res) => {
       email: req.user.email,
     },
   });
+});
+
+router.post("/logout", protect, async (req, res) => {
+  res.clearCookie("token", { path: "/" });
+  res.status(200).json({ success: true, message: "Logged out successfully" });
 });
 
 module.exports = router;

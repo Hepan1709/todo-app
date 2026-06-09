@@ -134,3 +134,219 @@ h1 {
   flex: 1;
 }
 
+/* ── NEW: AUTH SCREEN ────────────────────────────────────────── */
+
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.auth-box {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.auth-box h1 {
+  margin-bottom: 6px;
+}
+
+.auth-subtitle {
+  color: #888;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-error {
+  background: #fdecea;
+  color: #c0392b;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.auth-switch {
+  margin-top: 16px;
+  font-size: 13px;
+  color: #666;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #3498db;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.full-width {
+  width: 100%;
+}
+
+/* ── NEW: HEADER WITH LOGOUT ─────────────────────────────────── */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  text-align: left;
+  margin: 0;
+}
+
+.header .subtitle {
+  text-align: left;
+  margin: 2px 0 0 0;
+}
+
+.logout-btn {
+  padding: 7px 14px;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #666;
+}
+
+.logout-btn:hover {
+  background: #fdecea;
+  color: #c0392b;
+  border-color: #f5c6c6;
+}
+
+/* ── NEW: FORM EXTRA ROW (due date) ─────── */
+
+.form {
+  flex-direction: column;
+}
+
+.form-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.form-extra {
+  flex-wrap: wrap;
+}
+
+.input-sm {
+  flex: 1;
+  min-width: 90px;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  background: white;
+}
+
+.input-sm:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+/* ── NEW: FILTERS SECTION ────────────────────────────────────── */
+
+.filters {
+  background: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.clear-btn {
+  padding: 7px 12px;
+  background: #fdecea;
+  color: #c0392b;
+  border: 1px solid #f5c6c6;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.clear-btn:hover {
+  background: #f5c6c6;
+}
+
+
+.item {
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
+}
+
+.item-content {
+  flex: 1;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.item-content .actions {
+  margin-top: 2px;
+}
+
+/* ── NEW: DUE DATE ──────────────────────────── */
+
+.item-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.due-date {
+  font-size: 11px;
+  color: #666;
+  background: #f0f0f0;
+  padding: 2px 7px;
+  border-radius: 3px;
+}
+
+.due-date.overdue {
+  color: #c0392b;
+  background: #fdecea;
+}
+
+.edit-form {
+  flex: 1;
+  flex-direction: column;
+  padding: 12px;
+  gap: 8px;
+}

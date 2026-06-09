@@ -7,31 +7,56 @@ router.use(protect);
 
 router.get("/", async (req, res) => {
   try {
-    const {done , search , sortBy } = req.query;
+    const { done, search, sortBy, status } = req.query;
 
     const filter = { user: req.user._id };
 
     if (search) {
       filter.text = { $regex: search, $options: "i" };
     }
-    if (done === "true") {
-      filter.done = done === true;
+
+    // support status filter (preferred). If status provided, filter by it.
+    if (status) {
+      filter.status = status;
+
+    } else if (typeof done !== "undefined" && done !== "") {
+
+      // backwards-compatible: parse done as boolean string
+      if (done === "true") filter.done = true;
+
+      else if (done === "false") filter.done = false;
     }
 
     let sortOption = { createdAt: -1 };
+
     if (sortBy === "dueDate"){
       sortOption = { dueDate: 1 };
     }
+
     if (sortBy === "oldest"){
       sortOption = { createdAt: 1 };
     }
 
-    const todos = await Todo.find(filter).sort(sortOption);
+    let todos;
+
+    if (sortBy === "dueDate") {
+      // use aggregation to place null dueDate items last
+      todos = await Todo.aggregate([
+        { $match: filter },
+        { $addFields: { dueDateOrder: { $cond: [ { $eq: ["$dueDate", null] }, 1, 0 ] } } },
+        { $sort: { dueDateOrder: 1, dueDate: 1 } },
+      ]);
+
+    } else {
+      todos = await Todo.find(filter).sort(sortOption);
+    }
+
     res.status(200).json({
       success: true,
       count: todos.length,
       data: todos,
     });
+    
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
