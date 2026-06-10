@@ -7,7 +7,7 @@ router.use(protect);
 
 router.get("/", async (req, res) => {
   try {
-    const { done, search, sortBy, status } = req.query;
+    const { done, search, sortBy, status, page = 1, limit = 10 } = req.query;
 
     const filter = { user: req.user._id };
 
@@ -29,31 +29,42 @@ router.get("/", async (req, res) => {
 
     let sortOption = { createdAt: -1 };
 
-    if (sortBy === "dueDate"){
+    if (sortBy === "dueDate") {
       sortOption = { dueDate: 1 };
     }
 
-    if (sortBy === "oldest"){
+    if (sortBy === "oldest") {
       sortOption = { createdAt: 1 };
     }
+
+    const pageNumber = Math.max(parseInt(page, 10) || 1, 1);
+    const pageLimit = Math.max(parseInt(limit, 10) || 10, 1);
+    const skip = (pageNumber - 1) * pageLimit;
+
+    const totalCount = await Todo.countDocuments(filter);
+    const totalPages = Math.max(Math.ceil(totalCount / pageLimit), 1);
 
     let todos;
 
     if (sortBy === "dueDate") {
-      // use aggregation to place null dueDate items last
+      // use aggregation to place null dueDate items last and paginate after sorting
       todos = await Todo.aggregate([
         { $match: filter },
         { $addFields: { dueDateOrder: { $cond: [ { $eq: ["$dueDate", null] }, 1, 0 ] } } },
         { $sort: { dueDateOrder: 1, dueDate: 1 } },
+        { $skip: skip },
+        { $limit: pageLimit },
       ]);
-
     } else {
-      todos = await Todo.find(filter).sort(sortOption);
+      todos = await Todo.find(filter).sort(sortOption).skip(skip).limit(pageLimit);
     }
 
     res.status(200).json({
       success: true,
       count: todos.length,
+      totalCount,
+      page: pageNumber,
+      totalPages,
       data: todos,
     });
     

@@ -32,6 +32,33 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState(""); // "" | "pending" | "in-progress" | "complete"
   const [sortBy, setSortBy] = useState(""); // "" | "dueDate" | "oldest"
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
+  async function fetchTodos(currentPage = 1) {
+    if (!user) return;
+
+    const params = new URLSearchParams();
+    if (search) params.append("search", search);
+    if (filterStatus) params.append("status", filterStatus);
+    if (sortBy) params.append("sortBy", sortBy);
+    params.append("page", currentPage);
+    params.append("limit", 10);
+
+    const res = await fetch(`${API}/todos?${params.toString()}`, {
+      credentials: "include",
+      headers: authHeaders(),
+    });
+    const json = await res.json();
+
+    if (json.success) {
+      setTodos(json.data);
+      setTotalPages(json.totalPages || 1);
+      setTotalCount(json.totalCount || 0);
+      setPage(json.page || currentPage);
+    }
+  }
 
   // check for logged-in user
   useEffect(() => {
@@ -53,21 +80,8 @@ export default function App() {
   // load todos whenever user or filters change
   useEffect(() => {
     if (!user) return; // not logged in — don't fetch
-
-    const params = new URLSearchParams();
-    if (search) params.append("search", search);
-    if (filterStatus) params.append("status", filterStatus);
-    if (sortBy) params.append("sortBy", sortBy);
-
-    fetch(`${API}/todos?${params.toString()}`, {
-      credentials: "include",
-      headers: authHeaders(),
-    })
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success) setTodos(json.data);
-      });
-  }, [user, search, filterStatus, sortBy]);
+    fetchTodos(page);
+  }, [user, search, filterStatus, sortBy, page]);
 
   // authentication handler for both login and registration
 
@@ -100,6 +114,9 @@ export default function App() {
       }
 
       setUser(json.user);
+      setPage(1);
+      setTotalPages(1);
+      setTotalCount(0);
       setAuthForm({ name: "", email: "", password: "" });
     } catch {
       setAuthError("Something went wrong. Is your server running?");
@@ -113,6 +130,9 @@ export default function App() {
     });
     setUser(null);
     setTodos([]);
+    setPage(1);
+    setTotalPages(1);
+    setTotalCount(0);
   }
 
   // todo handlers
@@ -123,7 +143,6 @@ export default function App() {
     if (input.trim() === "") return;
 
     const res = await fetch(`${API}/todos`, {
-
       method: "POST",
       credentials: "include",
       headers: authHeaders(),
@@ -136,9 +155,13 @@ export default function App() {
     const json = await res.json();
 
     if (json.success) {
-      setTodos((prev) => [json.data, ...prev]); // add to top of list
       setInput("");
       setDueDate("");
+      if (page === 1) {
+        fetchTodos(1);
+      } else {
+        setPage(1);
+      }
     }
   }
 
@@ -147,17 +170,15 @@ export default function App() {
     const todo = todos.find((t) => t._id === id);
 
     const res = await fetch(`${API}/todos/${id}`, {
-
       method: "PUT",
       credentials: "include",
       headers: authHeaders(),
       body: JSON.stringify({ done: !todo.done }),
-
     });
 
     const json = await res.json();
     if (json.success) {
-      setTodos((prev) => prev.map((t) => (t._id === id ? json.data : t)));
+      fetchTodos(page);
     }
   }
 
@@ -176,7 +197,7 @@ export default function App() {
     const json = await res.json();
 
     if (json.success) {
-      setTodos((prev) => prev.map((t) => (t._id === id ? json.data : t)));
+      fetchTodos(page);
     }
   }
 
@@ -191,7 +212,7 @@ export default function App() {
     const json = await res.json();
 
     if (json.success) {
-      setTodos((prev) => prev.filter((t) => t._id !== id));
+      fetchTodos(page);
     }
   }
 
@@ -222,7 +243,7 @@ export default function App() {
     const json = await res.json();
 
     if (json.success) {
-      setTodos((prev) => prev.map((t) => (t._id === editId ? json.data : t)));
+      fetchTodos(page);
       setEditId(null);
     }
   }
@@ -235,6 +256,7 @@ export default function App() {
     setSearch("");
     setFilterStatus("");
     setSortBy("");
+    setPage(1);
   }
 
   // helper to format date and check if it's overdue
@@ -366,17 +388,23 @@ export default function App() {
 
       {/* ── SEARCH + FILTERS ── */}
       <div className="filters">
-        <input
+            <input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           placeholder="🔍 Search todos..."
           className="input"
         />
         <div className="filter-row">
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => {
+              setFilterStatus(e.target.value);
+              setPage(1);
+            }}
             className="input input-sm"
           >
             <option value="">All status</option>
@@ -386,7 +414,10 @@ export default function App() {
           </select>
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            onChange={(e) => {
+              setSortBy(e.target.value);
+              setPage(1);
+            }}
             className="input input-sm"
           >
             <option value="">Sort: Newest</option>
@@ -404,8 +435,7 @@ export default function App() {
       {/* ── STATS ── */}
       {todos.length > 0 && (
         <p className="stats">
-          {doneCount} done · {todos.length - doneCount} left · {todos.length}{" "}
-          total
+          {doneCount} done · {todos.length - doneCount} left · Showing {todos.length} of {totalCount} total
         </p>
       )}
 
@@ -413,8 +443,9 @@ export default function App() {
       {todos.length === 0 ? (
         <p className="empty">No todos found. Add one above!</p>
       ) : (
-        <ul className="list">
-          {todos.map((todo) => {
+        <>
+          <ul className="list">
+            {todos.map((todo) => {
             const due = formatDate(todo.dueDate);
             return (
               <li key={todo._id} className={`item ${todo.done ? "done" : ""}`}>
@@ -505,6 +536,35 @@ export default function App() {
             );
           })}
         </ul>
+
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button
+                className="page-btn"
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+              >
+                Prev
+              </button>
+              {Array.from({ length: totalPages }, (_, index) => (
+                <button
+                  key={index + 1}
+                  className={`page-btn ${page === index + 1 ? "active" : ""}`}
+                  onClick={() => setPage(index + 1)}
+                >
+                  {index + 1}
+                </button>
+              ))}
+              <button
+                className="page-btn"
+                disabled={page === totalPages}
+                onClick={() => setPage(page + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
